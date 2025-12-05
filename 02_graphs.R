@@ -138,3 +138,23 @@ barplot(prop_q23,
         xlab = "Antwort",
         ylab = "Anteil")
 
+############################################################
+# 11) Scatterplot: EI_mean vs. Soziale Norm Familie (Q6.2_1)
+############################################################
+
+# Streudiagramm mit Regressionsgerade
+plot(df$Q6.2_1, df$EI_mean,
+     main = "Gründungsintention und erwartete Familienreaktion",
+     xlab = "Erwartete Reaktion Familie (Q6.2_1; 1 = sehr negativ, 7 = sehr positiv)",
+     ylab = "Gründungsintention (EI_mean, 1–7)",
+     pch = 16,      # gefüllte Punkte
+     col = "grey50") 
+
+# Lineare Regressionsgerade hinzufügen
+model_ei_family <- lm(EI_mean ~ Q6.2_1, data = df)
+abline(model_ei_family, col = "red", lwd = 2)
+
+# Optional: Korrelationskoeffizient ausgeben
+cor_ei_family <- cor(df$Q6.2_1, df$EI_mean, use = "complete.obs")
+cor_ei_family
+
