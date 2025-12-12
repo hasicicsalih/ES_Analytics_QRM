@@ -1,5 +1,122 @@
 ---
-title: "03_Projektbericht"
-output: html_document
+title: "Projektbericht – Statistische Kennwerte & Visualisierungen"
+author:
+  - "Ermin Zoronjic"
+  - "Salih Hasicic"
+date: "12. Dezember 2025"
+output:
+  html_document:
+    theme: cosmo
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    code_folding: hide
+    df_print: paged
+    highlight: tango
 ---
 
+# Einleitung
+
+In diesem Projektbericht dokumentieren wir unser Vorgehen zur Berechnung statistischer Kennwerte
+(Mittelwert, Median, Modus, Varianz, Standardabweichung) für ausgewählte Variablen und halten
+die Ergebnisse in einem reproduzierbaren R Markdown Dokument fest.
+
+# R Markdown – Formatierungsbeispiele
+
+Das ist ein kursiver und *fetter* Text.
+
+- Ungeordnete Liste
+- Punkt 2
+
+1. Geordnete Liste
+2. Punkt 2
+
+[Link zu R Markdown](https://rmarkdown.rstudio.com/)
+
+# Daten einlesen und vorbereiten
+
+Wichtig: Beim *Knit* wird R neu gestartet. Deshalb müssen Pakete und Datensatz *im Dokument* geladen werden.
+
+{r setup, message=FALSE, warning=FALSE}
+library(readxl)
+library(dplyr)
+library(knitr)
+
+df <- read_excel(
+  "GUESSS_SWITZERLAND_Final.xlsx",
+  sheet = "GUESSS_SWITZERLAND_Final_2"
+)
+
+# '.' als Missing (NA) behandeln und in numerisch umwandeln
+likert_cols <- c(
+  "Q4.1.1_1","Q4.1.1_2","Q4.1.1_3",
+  "Q4.1.1_4","Q4.1.1_5","Q4.1.1_6",
+  "Q6.2_1"
+)
+
+df <- df %>%
+  mutate(across(all_of(likert_cols),
+                ~ as.numeric(na_if(as.character(.x), "."))))
+
+
+# Statistische Kennwerte
+
+## Ausgewählte Variablen
+
+Wir analysieren folgende Variablen:
+
+- *EI_mean*: Skala aus den Intention-Items (Q4.1.1_1 bis Q4.1.1_6)
+- *Q6.2_1_family*: soziale Norm – Familie
+- *Q2.2_in_process* und *Q2.3_self_employed*: nominale Variablen (0/1)
+
+## Berechnung und Tabelle
+
+Im folgenden Chunk wird der Code im Bericht ausgeblendet (echo = FALSE), die Resultate werden jedoch angezeigt.
+
+{r kennwerte, echo=FALSE}
+# Skala EI_mean bilden
+ei_items <- c(
+  "Q4.1.1_1","Q4.1.1_2","Q4.1.1_3",
+  "Q4.1.1_4","Q4.1.1_5","Q4.1.1_6"
+)
+
+ei_mat <- as.matrix(df[, ei_items])
+df$EI_mean <- rowMeans(ei_mat, na.rm = TRUE)
+
+# EI_mean auf NA setzen, wenn weniger als 3 gültige Antworten vorliegen
+valid_counts <- rowSums(!is.na(ei_mat))
+df$EI_mean[valid_counts < 3] <- NA
+
+# Nominale Variablen sicherstellen
+df$Q2.2 <- as.numeric(df$Q2.2)
+df$Q2.3 <- as.numeric(df$Q2.3)
+
+# Modus-Funktion
+stat_mode <- function(x) {
+  x <- x[!is.na(x)]
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+# Funktion für statistische Kennwerte
+kennwerte <- function(x, name) {
+  x_clean <- x[!is.na(x)]
+  data.frame(
+    Variable   = name,
+    N          = length(x_clean),
+    Mittelwert = mean(x_clean),
+    Median     = median(x_clean),
+    Modus      = stat_mode(x_clean),
+    Varianz    = var(x_clean),
+    SD         = sd(x_clean)
+  )
+}
+
+results_mmmo <- dplyr::bind_rows(
+  kennwerte(df$EI_mean, "EI_mean"),
+  kennwerte(df$Q6.2_1,  "Q6.2_1_family"),
+  kennwerte(df$Q2.2,    "Q2.2_in_process"),
+  kennwerte(df$Q2.3,    "Q2.3_self_employed")
+)
+
+knitr::kable(results_mmmo, digits = 3)
