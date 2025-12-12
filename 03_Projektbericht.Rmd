@@ -15,33 +15,33 @@ output:
     highlight: tango
 ---
 
+```{r global-setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
 # Einleitung
 
 In diesem Projektbericht dokumentieren wir unser Vorgehen zur Berechnung statistischer Kennwerte
 (Mittelwert, Median, Modus, Varianz, Standardabweichung) für ausgewählte Variablen und halten
-die Ergebnisse in einem reproduzierbaren R Markdown Dokument fest.
-
-# R Markdown – Formatierungsbeispiele
-
-Das ist ein kursiver und *fetter* Text.
-
-- Ungeordnete Liste
-- Punkt 2
-
-1. Geordnete Liste
-2. Punkt 2
-
-[Link zu R Markdown](https://rmarkdown.rstudio.com/)
+die Ergebnisse in einem reproduzierbaren R Markdown Dokument fest. Zudem visualisieren wir die
+Verteilungen der Merkmale grafisch (Histogramme, Boxplots, Balkendiagramme).
 
 # Daten einlesen und vorbereiten
 
 Wichtig: Beim *Knit* wird R neu gestartet. Deshalb müssen Pakete und Datensatz *im Dokument* geladen werden.
 
-{r setup, message=FALSE, warning=FALSE}
+```{r setup}
+# Pakete laden
+# Falls noch nicht installiert:
+# install.packages("readxl")
+# install.packages("dplyr")
+# install.packages("knitr")
+
 library(readxl)
 library(dplyr)
 library(knitr)
 
+# Daten einlesen
 df <- read_excel(
   "GUESSS_SWITZERLAND_Final.xlsx",
   sheet = "GUESSS_SWITZERLAND_Final_2"
@@ -55,9 +55,11 @@ likert_cols <- c(
 )
 
 df <- df %>%
-  mutate(across(all_of(likert_cols),
-                ~ as.numeric(na_if(as.character(.x), "."))))
-
+  mutate(across(
+    all_of(likert_cols),
+    ~ as.numeric(na_if(as.character(.x), "."))
+  ))
+```
 
 # Statistische Kennwerte
 
@@ -65,15 +67,16 @@ df <- df %>%
 
 Wir analysieren folgende Variablen:
 
-- *EI_mean*: Skala aus den Intention-Items (Q4.1.1_1 bis Q4.1.1_6)
-- *Q6.2_1_family*: soziale Norm – Familie
-- *Q2.2_in_process* und *Q2.3_self_employed*: nominale Variablen (0/1)
+- `EI_mean`: Skala aus den Intention-Items (`Q4.1.1_1` bis `Q4.1.1_6`)
+- `Q6.2_1_family`: soziale Norm – Familie (`Q6.2_1`)
+- `Q2.2_in_process`: im Gründungsprozess (0/1)
+- `Q2.3_self_employed`: bereits selbständig (0/1)
 
 ## Berechnung und Tabelle
 
-Im folgenden Chunk wird der Code im Bericht ausgeblendet (echo = FALSE), die Resultate werden jedoch angezeigt.
+Im folgenden Chunk wird der Code im Bericht ausgeblendet (`echo = FALSE`), die Resultate werden jedoch angezeigt.
 
-{r kennwerte, echo=FALSE}
+```{r kennwerte, echo=FALSE}
 # Skala EI_mean bilden
 ei_items <- c(
   "Q4.1.1_1","Q4.1.1_2","Q4.1.1_3",
@@ -87,7 +90,7 @@ df$EI_mean <- rowMeans(ei_mat, na.rm = TRUE)
 valid_counts <- rowSums(!is.na(ei_mat))
 df$EI_mean[valid_counts < 3] <- NA
 
-# Nominale Variablen sicherstellen
+# Nominale Variablen sicherstellen (0/1)
 df$Q2.2 <- as.numeric(df$Q2.2)
 df$Q2.3 <- as.numeric(df$Q2.3)
 
@@ -112,6 +115,7 @@ kennwerte <- function(x, name) {
   )
 }
 
+# Kennwerte für die vier Variablen berechnen
 results_mmmo <- dplyr::bind_rows(
   kennwerte(df$EI_mean, "EI_mean"),
   kennwerte(df$Q6.2_1,  "Q6.2_1_family"),
@@ -120,3 +124,90 @@ results_mmmo <- dplyr::bind_rows(
 )
 
 knitr::kable(results_mmmo, digits = 3)
+```
+
+# Grafische Darstellung der Merkmalsausprägungen
+
+In diesem Abschnitt visualisieren wir die Verteilungen der ausgewählten Variablen. Wir verwenden:
+
+- ein Histogramm für `EI_mean`
+- ein Boxplot für `EI_mean` nach Gründungsprozess (`Q2.2`)
+- ein Histogramm für `Q6.2_1` (Norm Familie)
+- Balkendiagramme für `Q2.2` und `Q2.3`
+
+```{r graphs}
+# Faktoren für die 0/1-Variablen für schönere Achsenbeschriftung
+df$Q2.2_factor <- factor(
+  df$Q2.2,
+  levels = c(0, 1),
+  labels = c("nein", "ja")
+)
+
+df$Q2.3_factor <- factor(
+  df$Q2.3,
+  levels = c(0, 1),
+  labels = c("nein", "ja")
+)
+
+# 1) Histogramm der Gründungsintention (EI_mean)
+hist(
+  df$EI_mean,
+  main  = "Histogramm der Gründungsintention (EI_mean)",
+  xlab  = "Gründungsintention (Mittelwert 1–7)",
+  ylab  = "Häufigkeit",
+  breaks = 20
+)
+
+# 2) Boxplot: EI_mean nach Gründungsprozess (Q2.2)
+boxplot(
+  EI_mean ~ Q2.2_factor,
+  data  = df,
+  main  = "Gründungsintention nach Gründungsprozess (Q2.2)",
+  xlab  = "Im Gründungsprozess?",
+  ylab  = "Gründungsintention (EI_mean)"
+)
+
+# 3) Histogramm: Soziale Norm – Familie (Q6.2_1)
+hist(
+  df$Q6.2_1,
+  main   = "Reaktion der Familie auf Unternehmertum (Q6.2_1)",
+  xlab   = "Erwartete Reaktion Familie (1 = sehr negativ, 7 = sehr positiv)",
+  ylab   = "Häufigkeit",
+  breaks = seq(0.5, 7.5, by = 1)
+)
+
+# 4) Balkendiagramm: Im Gründungsprozess (Q2.2)
+tab_q22 <- table(df$Q2.2_factor)
+
+barplot(
+  tab_q22,
+  main = "Im Gründungsprozess (Q2.2)",
+  xlab = "Antwort",
+  ylab = "Anzahl Personen"
+)
+
+# 5) Balkendiagramm: Bereits selbständig (Q2.3)
+tab_q23 <- table(df$Q2.3_factor)
+
+barplot(
+  tab_q23,
+  main = "Bereits selbständig (Q2.3)",
+  xlab = "Antwort",
+  ylab = "Anzahl Personen"
+)
+```
+
+# Interpretation der Ergebnisse (Stichworte)
+
+- **Gründungsintention (`EI_mean`)**  
+  Die Verteilung zeigt, ob sich die meisten Studierenden eher im unteren oder oberen Bereich der Skala befinden.  
+  Ein niedriger Mittelwert und eine rechts-schiefe Verteilung würden auf insgesamt eher geringe Gründungsintention hinweisen.
+
+- **Norm Familie (`Q6.2_1`)**  
+  Das Histogramm gibt Aufschluss darüber, ob die meisten Familiengründungen positiv oder negativ bewerten.  
+  Eine Häufung im Bereich 5–7 spricht für grosse Unterstützung.
+
+- **Nominale Variablen (`Q2.2`, `Q2.3`)**  
+  Die Balkendiagramme machen sichtbar, dass (vermutlich) nur ein kleiner Anteil im Gründungsprozess ist oder bereits selbständig ist.  
+  Die starke Unbalance ist wichtig für die Interpretation späterer Modelle (z. B. logistische Regression).
+
