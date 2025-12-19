@@ -110,3 +110,67 @@ tests
 # ---------------------------
 pvals <- sapply(tests, function(x) x$p.value)
 p.adjust(pvals, method = "bonferroni")
+
+# ---------------------------
+# Interpretation
+# ---------------------------
+# Es wurden unabhängige Welch-t-Tests durchgeführt, um zu prüfen, 
+# ob sich die wahrgenommenen sozialen Normen zwischen Studierenden 
+# mit tatsächlicher Gründungsaktivität (im Gründungsprozess oder bereits gegründet) 
+# und Studierenden ohne Aktivität unterscheiden. In allen drei Norm-Items
+# liegen die Mittelwerte der aktiven Gruppe signifikant höher als
+# jene der nicht-aktiven Gruppe (alle p < .001). Auch nach Bonferroni-Korrektur
+# zur Kontrolle multipler Tests bleiben die Unterschiede statistisch signifikant.
+# Dies deutet darauf hin, dass Studierende, die tatsächlich entrepreneurial aktiv
+# sind, im Durchschnitt stärkere wahrgenommene Unterstützung bzw. 
+# positivere Reaktionen aus ihrem sozialen Umfeld berichten. Diese Ergebnisse
+# stützen die Annahme, dass soziale Normen mit dem Übergang von Intention zu 
+# tatsächlichem Verhalten in Zusammenhang stehen.
+
+# =========================================================
+# 7) Wilcoxon-Rangsummen-Tests
+# =========================================================
+
+wilcox_tests <- lapply(norm_vars, function(v) {
+  wilcox.test(
+    as.formula(paste(v, "~ aktiv")),
+    data = data,
+    exact = FALSE   # wichtig bei grossen Stichproben
+  )
+})
+
+names(wilcox_tests) <- norm_vars
+wilcox_tests
+
+# p-Werte extrahieren & Bonferroni-Korrektur
+wilcox_pvals <- sapply(wilcox_tests, function(x) x$p.value)
+p.adjust(wilcox_pvals, method = "bonferroni")
+
+# ---------------------------
+# Interpretation (Wilcoxon-Rangsummen-Test)
+# ---------------------------
+# Zusätzlich zu den parametrischen Welch-t-Tests wurden Wilcoxon-
+# Rangsummen-Tests durchgeführt, um die Robustheit der Ergebnisse
+# zu überprüfen. Der Wilcoxon-Test ist ein nicht-parametrisches
+# Verfahren und erfordert keine Annahmen über die Normalverteilung
+# der Daten, was insbesondere bei ordinalskalierten Likert-Skalen
+# sinnvoll ist.
+#
+# Die Ergebnisse zeigen für alle drei Items zu wahrgenommenen
+# sozialen Normen signifikante Unterschiede zwischen Studierenden
+# mit tatsächlicher Gründungsaktivität (im Gründungsprozess oder
+# bereits gegründet) und Studierenden ohne Aktivität (alle p < .001).
+# Auch nach Bonferroni-Korrektur zur Kontrolle multipler Tests
+# bleiben alle Unterschiede hochsignifikant.
+#
+# Studierende mit unternehmerischer Aktivität weisen durchgehend
+# höhere Ränge in den Norm-Items auf als Studierende ohne Aktivität.
+# Dies deutet darauf hin, dass stärkere wahrgenommene soziale
+# Unterstützung bzw. positivere erwartete Reaktionen aus dem
+# sozialen Umfeld mit tatsächlichem Gründungsverhalten zusammenhängen.
+#
+# Die Übereinstimmung der Ergebnisse aus den parametrischen t-Tests
+# und den nicht-parametrischen Wilcoxon-Tests erhöht die Robustheit
+# der Befunde und zeigt, dass die beobachteten Unterschiede nicht
+# von Verteilungsannahmen abhängen.
+
