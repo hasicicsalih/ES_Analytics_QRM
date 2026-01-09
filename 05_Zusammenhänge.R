@@ -49,7 +49,7 @@ summary(data$socnorm_mean)
 # ---------------------------
 # 4) Gründungsintention (falls vorhanden) als Skala
 # ---------------------------
-# In eurem Projekt waren das:
+# In unserem Projekt waren das:
 intent_vars <- c("Q4.1.1_1","Q4.1.1_2","Q4.1.1_3","Q4.1.1_4","Q4.1.1_5","Q4.1.1_6")
 
 # robust: nur berechnen, wenn die Spalten existieren
